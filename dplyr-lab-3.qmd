@@ -1,0 +1,191 @@
+---
+title: "DPLYR Lab 3"
+author: "Matteo Boyer"
+format: html
+---
+
+```{r}
+#| echo: false
+#| message: false
+here::i_am("dplyr-lab-3.Rproj")
+library(here)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+theme_set(theme_bw())
+
+```
+## Exercise 1
+
+```{r}
+#| echo: false
+#| message: false
+
+spotify <- readRDS("top-spotify-hits-2000-2019.Rds")
+
+```
+
+### Question 1
+
+```{r}
+#| echo: false
+#| message: false
+
+n_song <- spotify |>
+  distinct(song, artist) |>
+  nrow()
+
+n_artist <- spotify |>
+  distinct(artist) |>
+  nrow()
+
+n_genre <- spotify |>
+  distinct(genre) |>
+  nrow()
+  
+  
+```
+
+
+The data set contains `r n_song` different songs, `r n_artist` different artists and `r n_genre` different musical genre.
+
+### Question 2
+
+```{r}
+#| echo: false
+#| message: false
+
+n_artist_per_year <- spotify |>
+  group_by(year) |>
+  distinct(artist) |>
+  summarise(n())
+
+
+
+knitr::kable(n_artist_per_year, col.names= c("Year","Number of diferent artists"), caption = "Number of different artists in the spotify dataset for each year", align = "cc")
+
+
+```
+
+
+### Question 3
+
+```{r}
+#| echo: false
+#| message: false
+
+pop_artist <- spotify |>
+  group_by(artist) |>
+  distinct(song) |>
+  summarise("n" = n()) |>
+  ungroup() |>
+  slice_max(n)
+
+```
+
+The most popular artist is `r pop_artist[1]` with  `r pop_artist[2]` different songs over the period.
+
+### Question 4
+
+```{r}
+#| echo: false
+#| message: false
+
+music_genre <- spotify |>
+  group_by(genre) |>
+  distinct(artist, song, .keep_all = TRUE) |>
+  summarise("Minimun" = min(tempo), "Maximum" = max(tempo), "Mean" = mean(tempo), "Median" = median(tempo), "Number of songs" = n())
+
+knitr::kable(music_genre, caption = "Tempo statistics by musical genres", align = "ccccc", digits = 0)
+```
+
+### Question 5
+
+```{r}
+#| echo: false
+#| message: false
+
+stat_per_year <- spotify |>
+  group_by(year) |>
+  summarise("mean_liveness" = mean(liveness), "mean_danceability" = mean(danceability))
+
+knitr::kable(stat_per_year,col.names= c("Year","Mean liveness", "Mean danceability"), caption = "Mean liveness and mean danceability per year", digits = 3)
+
+
+```
+
+
+### Question 6
+
+```{r}
+#| echo: false
+#| message: false
+
+stat_per_year2 <- stat_per_year |>
+  pivot_longer(cols = mean_liveness:mean_danceability, names_to="variable", values_to="mean_value")
+
+ggplot(stat_per_year2, aes(year, mean_value, group = variable, color = variable))+ geom_line() + xlab("Year") + ylab("Mean annual value") + labs(title ="Temporal evolution of the mean annual liveness and the mean annual danceability")
+
+```
+## Exercise 2
+
+```{r}
+#| echo: false
+#| message: false
+
+dropout <- readRDS(here("dropout.Rds"))
+
+```
+
+### Question 1
+
+See code.
+
+```{r}
+#| echo: false
+#| message: false
+
+adm_grade <- dropout |>
+  group_by(Target, `Marital status`) |>
+  summarise("Median" = median(`Admission grade`))
+
+```
+### Question 2
+
+```{r}
+#| echo: false
+#| message: false
+
+adm_grade2 <- adm_grade |>
+  pivot_wider(values_from = Median, names_from = Target)
+
+knitr::kable(adm_grade2, caption = "Median admission grade by marital status and target variable", digits = 3)
+```
+
+### Question 3
+
+See code.
+
+```{r}
+#| echo: false
+#| message: false
+
+cond_median <- dropout |>
+  group_by(Gender) |>
+  summarise(across(starts_with("Curricular"), median))
+
+```
+
+### Question 4
+
+```{r}
+#| echo: false
+#| message: false
+
+cond_median2 <- cond_median |>
+  pivot_longer(cols = starts_with('Curricular')) |>
+  pivot_wider(names_from = Gender)
+
+knitr::kable(cond_median2, col.names= c("Variable","Male", "Female"), caption = "Median of all variables related to curricular units conditional on gender", digits = 2)
+
+```
